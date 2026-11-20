@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -371,7 +372,7 @@ fun LoginScreen(
                             if (isLoading) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White)
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White, modifier = Modifier.graphicsLayer(scaleX = -1f))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Tizimga Kirish", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                             }
