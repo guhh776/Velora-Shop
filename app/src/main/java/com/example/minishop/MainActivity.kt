@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,8 +27,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +43,6 @@ import com.example.minishop.data.SupabaseRepository
 import com.example.minishop.ui.theme.*
 import kotlinx.coroutines.launch
 
-// ─── Models ───────────────────────────────────────────────────────────────────
 data class Product(
     val id: Int,
     val name: String,
@@ -63,7 +59,6 @@ enum class AppScreen {
     LOGIN_LOGS
 }
 
-// ─── Entry Point ──────────────────────────────────────────────────────────────
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,14 +77,21 @@ fun MainApp() {
     var loggedInUserLogin by remember { mutableStateOf("") }
     var cartCount by remember { mutableStateOf(0) }
 
+    fun navigateTo(screen: AppScreen) {
+        if (screen == AppScreen.USERS_LIST || screen == AppScreen.LOGIN_LOGS) {
+            previousScreen = currentScreen
+        }
+        currentScreen = screen
+    }
+
     BackHandler(
         enabled = currentScreen == AppScreen.USERS_LIST ||
-                  currentScreen == AppScreen.LOGIN_LOGS ||
-                  currentScreen == AppScreen.REGISTER
+                currentScreen == AppScreen.LOGIN_LOGS ||
+                currentScreen == AppScreen.REGISTER
     ) {
         currentScreen = when (currentScreen) {
-            AppScreen.REGISTER  -> AppScreen.LOGIN
-            else                -> previousScreen
+            AppScreen.REGISTER -> AppScreen.LOGIN
+            else -> previousScreen
         }
     }
 
@@ -101,28 +103,16 @@ fun MainApp() {
                     currentScreen = AppScreen.SHOP
                 },
                 onNavigateToRegister = { currentScreen = AppScreen.REGISTER },
-                onOpenUsers = {
-                    previousScreen = AppScreen.LOGIN
-                    currentScreen = AppScreen.USERS_LIST
-                },
-                onOpenLogs = {
-                    previousScreen = AppScreen.LOGIN
-                    currentScreen = AppScreen.LOGIN_LOGS
-                }
+                onOpenUsers = { navigateTo(AppScreen.USERS_LIST) },
+                onOpenLogs = { navigateTo(AppScreen.LOGIN_LOGS) }
             )
         }
         AppScreen.REGISTER -> {
             RegisterScreen(
                 onRegisterSuccess = { currentScreen = AppScreen.LOGIN },
                 onNavigateToLogin = { currentScreen = AppScreen.LOGIN },
-                onOpenUsers = {
-                    previousScreen = AppScreen.REGISTER
-                    currentScreen = AppScreen.USERS_LIST
-                },
-                onOpenLogs = {
-                    previousScreen = AppScreen.REGISTER
-                    currentScreen = AppScreen.LOGIN_LOGS
-                }
+                onOpenUsers = { navigateTo(AppScreen.USERS_LIST) },
+                onOpenLogs = { navigateTo(AppScreen.LOGIN_LOGS) }
             )
         }
         AppScreen.SHOP -> {
@@ -135,14 +125,8 @@ fun MainApp() {
                     cartCount = 0
                     currentScreen = AppScreen.LOGIN
                 },
-                onOpenUsers = {
-                    previousScreen = AppScreen.SHOP
-                    currentScreen = AppScreen.USERS_LIST
-                },
-                onOpenLogs = {
-                    previousScreen = AppScreen.SHOP
-                    currentScreen = AppScreen.LOGIN_LOGS
-                }
+                onOpenUsers = { navigateTo(AppScreen.USERS_LIST) },
+                onOpenLogs = { navigateTo(AppScreen.LOGIN_LOGS) }
             )
         }
         AppScreen.USERS_LIST -> {
@@ -155,7 +139,7 @@ fun MainApp() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. LOGIN SCREEN
+// 1. SIMPLE LOGIN SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -177,14 +161,7 @@ fun LoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "Velora Shop",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        color = Color.White
-                    )
-                },
+                title = { Text("Velora Shop", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = ShopPrimary,
                     titleContentColor = Color.White,
@@ -192,7 +169,7 @@ fun LoginScreen(
                 ),
                 actions = {
                     IconButton(onClick = onOpenUsers) {
-                        Icon(Icons.Default.Group, contentDescription = "Foydalanuvchilar ro'yxati")
+                        Icon(Icons.Default.Group, contentDescription = "Foydalanuvchilar")
                     }
                     IconButton(onClick = onOpenLogs) {
                         Icon(Icons.Default.History, contentDescription = "Kirishlar tarixi")
@@ -201,210 +178,138 @@ fun LoginScreen(
             )
         }
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(ShopBackground, Color(0xFFFFE0D6))
-                    )
-                )
                 .padding(padding)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Spacer(Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-                // ─── Logo ───────────────────────────────────────────────────
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(ShopPrimary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingBag,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(44.dp)
-                    )
-                }
+            Text(
+                text = "Kirish",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tizimga kirish uchun login va parolni kiriting",
+                fontSize = 14.sp,
+                color = ShopTextMuted,
+                textAlign = TextAlign.Center
+            )
 
-                Spacer(Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-                Text(
-                    text = "Tizimga Kirish",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ShopTextDark
-                )
-                Text(
-                    text = "Hisobingizga kiring",
-                    fontSize = 14.sp,
-                    color = ShopTextMuted,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-
-                Spacer(Modifier.height(32.dp))
-
-                // ─── Card ────────────────────────────────────────────────────
+            if (errorMessage != null) {
                 Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Error banner
-                        errorMessage?.let {
-                            Surface(
-                                color = Color(0xFFFFEBEB),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Error,
-                                        contentDescription = null,
-                                        tint = Color(0xFFD32F2F),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = it,
-                                        color = Color(0xFFD32F2F),
-                                        fontSize = 13.sp
-                                    )
-                                }
+                    Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            OutlinedTextField(
+                value = login,
+                onValueChange = { login = it; errorMessage = null },
+                label = { Text("Login") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it; errorMessage = null },
+                label = { Text("Parol") },
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null
+                        )
+                    }
+                },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    if (isLoading) return@Button
+                    if (login.isBlank() || password.isBlank()) {
+                        errorMessage = "Login va parolni kiriting!"
+                        return@Button
+                    }
+                    isLoading = true
+                    errorMessage = null
+                    scope.launch {
+                        val res = SupabaseRepository.login(login.trim(), password)
+                        isLoading = false
+                        when (res) {
+                            is Result.Success -> {
+                                Toast.makeText(context, "Muvaffaqiyatli kirildi!", Toast.LENGTH_SHORT).show()
+                                onLoginSuccess(login.trim())
                             }
-                        }
-
-                        // Login field
-                        OutlinedTextField(
-                            value = login,
-                            onValueChange = { login = it; errorMessage = null },
-                            label = { Text("Login") },
-                            leadingIcon = {
-                                Icon(Icons.Default.AccountCircle, contentDescription = null, tint = ShopPrimary)
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ShopPrimary,
-                                focusedLabelColor = ShopPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Password field
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it; errorMessage = null },
-                            label = { Text("Parol") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, contentDescription = null, tint = ShopPrimary)
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(
-                                        if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = null
-                                    )
-                                }
-                            },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ShopPrimary,
-                                focusedLabelColor = ShopPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Login Button
-                        Button(
-                            onClick = {
-                                if (isLoading) return@Button
-                                if (login.isBlank() || password.isBlank()) {
-                                    errorMessage = "Login va parolni kiriting!"
-                                    return@Button
-                                }
-                                isLoading = true
-                                errorMessage = null
-                                scope.launch {
-                                    val res = SupabaseRepository.login(login.trim(), password)
-                                    isLoading = false
-                                    when (res) {
-                                        is Result.Success -> {
-                                            Toast.makeText(context, "Muvaffaqiyatli kirildi!", Toast.LENGTH_SHORT).show()
-                                            onLoginSuccess(login.trim())
-                                        }
-                                        is Result.Error -> {
-                                            errorMessage = res.message
-                                        }
-                                    }
-                                }
-                            },
-                            enabled = !isLoading,
-                            colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White, modifier = Modifier.graphicsLayer(scaleX = -1f))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Tizimga Kirish", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                            is Result.Error -> {
+                                errorMessage = res.message
                             }
                         }
                     }
+                },
+                enabled = !isLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Tizimga kirish", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
-
-                Spacer(Modifier.height(24.dp))
-
-                // ─── Navigate to Register ─────────────────────────────────────
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Hisobingiz yo'qmi? ", fontSize = 14.sp, color = ShopTextMuted)
-                    Text(
-                        text = "Ro'yxatdan o'tish",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ShopPrimary,
-                        modifier = Modifier.clickable { onNavigateToRegister() }
-                    )
-                }
-
-                Spacer(Modifier.height(32.dp))
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Hisobingiz yo'qmi? ", fontSize = 14.sp, color = ShopTextMuted)
+                Text(
+                    text = "Ro'yxatdan o'tish",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ShopPrimary,
+                    modifier = Modifier.clickable { onNavigateToRegister() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. REGISTER SCREEN
+// 2. SIMPLE REGISTER SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -429,9 +334,7 @@ fun RegisterScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Velora Shop", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
-                },
+                title = { Text("Ro'yxatdan o'tish", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateToLogin) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Ortga", tint = Color.White)
@@ -444,7 +347,7 @@ fun RegisterScreen(
                 ),
                 actions = {
                     IconButton(onClick = onOpenUsers) {
-                        Icon(Icons.Default.Group, contentDescription = "Foydalanuvchilar ro'yxati")
+                        Icon(Icons.Default.Group, contentDescription = "Foydalanuvchilar")
                     }
                     IconButton(onClick = onOpenLogs) {
                         Icon(Icons.Default.History, contentDescription = "Kirishlar tarixi")
@@ -453,269 +356,171 @@ fun RegisterScreen(
             )
         }
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(ShopBackground, Color(0xFFFFE0D6))
-                    )
-                )
                 .padding(padding)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-                // ─── Logo ───────────────────────────────────────────────────
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(ShopPrimary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PersonAdd,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
+            Text(
+                text = "Yangi hisob yaratish",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Ma'lumotlaringizni to'ldiring",
+                fontSize = 14.sp,
+                color = ShopTextMuted
+            )
 
-                Spacer(Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = "Ro'yxatdan O'tish",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ShopTextDark
-                )
-                Text(
-                    text = "Yangi hisob yarating",
-                    fontSize = 14.sp,
-                    color = ShopTextMuted,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                // ─── Card ────────────────────────────────────────────────────
+            if (errorMessage != null) {
                 Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Error banner
-                        errorMessage?.let {
-                            Surface(
-                                color = Color(0xFFFFEBEB),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Error,
-                                        contentDescription = null,
-                                        tint = Color(0xFFD32F2F),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(text = it, color = Color(0xFFD32F2F), fontSize = 13.sp)
-                                }
-                            }
+                    Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it; errorMessage = null },
+                label = { Text("Foydalanuvchi ismi") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = login,
+                onValueChange = { login = it; errorMessage = null },
+                label = { Text("Login") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it; errorMessage = null },
+                label = { Text("Parol") },
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null
+                        )
+                    }
+                },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it; errorMessage = null },
+                label = { Text("Parolni tasdiqlash") },
+                trailingIcon = {
+                    IconButton(onClick = { confirmVisible = !confirmVisible }) {
+                        Icon(
+                            if (confirmVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null
+                        )
+                    }
+                },
+                visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    if (isLoading) return@Button
+                    when {
+                        username.isBlank() || login.isBlank() || password.isBlank() -> {
+                            errorMessage = "Barcha maydonlarni to'ldiring!"
+                            return@Button
                         }
-
-                        // Username field
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it; errorMessage = null },
-                            label = { Text("Foydalanuvchi ismi") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = ShopPrimary)
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ShopPrimary,
-                                focusedLabelColor = ShopPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                        password != confirmPassword -> {
+                            errorMessage = "Kiritilgan ikkala parol mos kelmadi!"
+                            return@Button
+                        }
+                    }
+                    isLoading = true
+                    errorMessage = null
+                    scope.launch {
+                        val res = SupabaseRepository.register(
+                            username = username.trim(),
+                            login = login.trim(),
+                            pass = password
                         )
-
-                        // Login field
-                        OutlinedTextField(
-                            value = login,
-                            onValueChange = { login = it; errorMessage = null },
-                            label = { Text("Login (unikal)") },
-                            leadingIcon = {
-                                Icon(Icons.Default.AccountCircle, contentDescription = null, tint = ShopPrimary)
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ShopPrimary,
-                                focusedLabelColor = ShopPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Password field
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it; errorMessage = null },
-                            label = { Text("Parol") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, contentDescription = null, tint = ShopPrimary)
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(
-                                        if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = null
-                                    )
-                                }
-                            },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ShopPrimary,
-                                focusedLabelColor = ShopPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Confirm Password field
-                        val passwordsMatch = confirmPassword.isEmpty() || password == confirmPassword
-                        OutlinedTextField(
-                            value = confirmPassword,
-                            onValueChange = { confirmPassword = it; errorMessage = null },
-                            label = { Text("Parolni tasdiqlash") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.LockReset,
-                                    contentDescription = null,
-                                    tint = if (passwordsMatch) ShopPrimary else Color(0xFFD32F2F)
-                                )
-                            },
-                            trailingIcon = {
-                                if (!passwordsMatch) {
-                                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFD32F2F))
-                                } else {
-                                    IconButton(onClick = { confirmVisible = !confirmVisible }) {
-                                        Icon(
-                                            if (confirmVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                            contentDescription = null
-                                        )
-                                    }
-                                }
-                            },
-                            visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            isError = !passwordsMatch,
-                            supportingText = {
-                                if (!passwordsMatch) {
-                                    Text("Parollar mos kelmadi!", color = Color(0xFFD32F2F), fontSize = 12.sp)
-                                }
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ShopPrimary,
-                                focusedLabelColor = ShopPrimary,
-                                errorBorderColor = Color(0xFFD32F2F)
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Register Button
-                        Button(
-                            onClick = {
-                                if (isLoading) return@Button
-                                when {
-                                    username.isBlank() || login.isBlank() || password.isBlank() -> {
-                                        errorMessage = "Barcha maydonlarni to'ldiring!"
-                                        return@Button
-                                    }
-                                    password != confirmPassword -> {
-                                        errorMessage = "Parollar mos kelmadi!"
-                                        return@Button
-                                    }
-                                }
-                                isLoading = true
-                                errorMessage = null
-                                scope.launch {
-                                    val res = SupabaseRepository.register(
-                                        username = username.trim(),
-                                        login = login.trim(),
-                                        pass = password
-                                    )
-                                    isLoading = false
-                                    when (res) {
-                                        is Result.Success -> {
-                                            Toast.makeText(context, "Ro'yxatdan o'tdingiz! Endi kiring.", Toast.LENGTH_LONG).show()
-                                            onRegisterSuccess()
-                                        }
-                                        is Result.Error -> {
-                                            errorMessage = res.message
-                                        }
-                                    }
-                                }
-                            },
-                            enabled = !isLoading,
-                            colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.PersonAdd, contentDescription = null, tint = Color.White)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Ro'yxatdan O'tish", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                        isLoading = false
+                        when (res) {
+                            is Result.Success -> {
+                                Toast.makeText(context, "Ro'yxatdan muvaffaqiyatli o'tdingiz!", Toast.LENGTH_LONG).show()
+                                onRegisterSuccess()
+                            }
+                            is Result.Error -> {
+                                errorMessage = res.message
                             }
                         }
                     }
+                },
+                enabled = !isLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Ro'yxatdan o'tish", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
-
-                Spacer(Modifier.height(20.dp))
-
-                // ─── Navigate to Login ────────────────────────────────────────
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Hisobingiz bormi? ", fontSize = 14.sp, color = ShopTextMuted)
-                    Text(
-                        text = "Kirish",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ShopPrimary,
-                        modifier = Modifier.clickable { onNavigateToLogin() }
-                    )
-                }
-
-                Spacer(Modifier.height(32.dp))
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Profilingiz bormi? ", fontSize = 14.sp, color = ShopTextMuted)
+                Text(
+                    text = "Kirish",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ShopPrimary,
+                    modifier = Modifier.clickable { onNavigateToLogin() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
@@ -732,11 +537,18 @@ fun UsersListScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     fun loadUsers() {
-        isLoading = true; errorMsg = null
+        isLoading = true
+        errorMsg = null
         scope.launch {
             when (val res = SupabaseRepository.fetchRegisteredUsers()) {
-                is Result.Success -> { users = res.data; isLoading = false }
-                is Result.Error   -> { errorMsg = res.message; isLoading = false }
+                is Result.Success -> {
+                    users = res.data
+                    isLoading = false
+                }
+                is Result.Error -> {
+                    errorMsg = res.message
+                    isLoading = false
+                }
             }
         }
     }
@@ -748,8 +560,8 @@ fun UsersListScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Foydalanuvchilar", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
-                        Text("signup jadvali • ${users.size} ta", fontSize = 11.sp, color = Color.White.copy(0.8f))
+                        Text("Foydalanuvchilar (signup)", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Jami: ${users.size}", fontSize = 12.sp, color = Color.White.copy(0.85f))
                     }
                 },
                 navigationIcon = {
@@ -762,81 +574,83 @@ fun UsersListScreen(onBack: () -> Unit) {
                         Icon(Icons.Default.Refresh, contentDescription = "Yangilash", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ShopPrimary, titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ShopPrimary,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ShopBackground)
                 .padding(padding)
         ) {
             when {
-                isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = ShopPrimary)
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = ShopPrimary
+                    )
                 }
-                errorMsg != null -> Column(
-                    Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Default.WifiOff, contentDescription = null, tint = ShopTextMuted, modifier = Modifier.size(48.dp))
-                    Spacer(Modifier.height(12.dp))
-                    Text(errorMsg ?: "Xatolik", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = { loadUsers() }, colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary)) {
-                        Text("Qayta urinish")
+                errorMsg != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = errorMsg ?: "Xatolik", color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { loadUsers() }) {
+                            Text("Qayta urinish")
+                        }
                     }
                 }
-                users.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Group, contentDescription = null, tint = ShopTextMuted, modifier = Modifier.size(56.dp))
-                        Spacer(Modifier.height(10.dp))
-                        Text("Hech qanday foydalanuvchi yo'q", color = ShopTextMuted)
-                    }
+                users.isEmpty() -> {
+                    Text(
+                        text = "Foydalanuvchilar mavjud emas",
+                        modifier = Modifier.align(Alignment.Center),
+                        color = ShopTextMuted
+                    )
                 }
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(users) { user ->
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(1.dp),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, ShopCardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(users) { user ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                Box(
-                                    modifier = Modifier.size(46.dp).clip(CircleShape).background(ShopPrimary.copy(0.15f)),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        user.username.take(1).uppercase().ifEmpty { "?" },
-                                        fontWeight = FontWeight.Bold, fontSize = 20.sp, color = ShopPrimary
-                                    )
-                                }
-                                Spacer(Modifier.width(14.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(user.username, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = ShopTextDark)
-                                    Text("@${user.login}", fontSize = 13.sp, color = ShopTextMuted)
-                                    if (user.createdAt.isNotEmpty()) {
-                                        Text(
-                                            "Ro'yxat: ${user.createdAt.take(10)}",
-                                            fontSize = 11.sp, color = ShopTextMuted.copy(0.7f)
-                                        )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = user.username, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                        Text(text = "Login: ${user.login}", fontSize = 14.sp, color = ShopTextMuted)
+                                        if (user.createdAt.isNotEmpty()) {
+                                            Text(
+                                                text = "Sana: ${user.createdAt.take(19).replace('T', ' ')}",
+                                                fontSize = 11.sp,
+                                                color = ShopTextMuted
+                                            )
+                                        }
                                     }
-                                }
-                                Surface(
-                                    color = ShopPrimary.copy(0.1f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("#${user.id}", fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                                        color = ShopPrimary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                    Text(
+                                        text = "#${user.id}",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = ShopPrimary
+                                    )
                                 }
                             }
                         }
@@ -859,11 +673,18 @@ fun LoginLogsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     fun loadLogs() {
-        isLoading = true; errorMsg = null
+        isLoading = true
+        errorMsg = null
         scope.launch {
             when (val res = SupabaseRepository.fetchLoginLogs()) {
-                is Result.Success -> { logs = res.data; isLoading = false }
-                is Result.Error   -> { errorMsg = res.message; isLoading = false }
+                is Result.Success -> {
+                    logs = res.data
+                    isLoading = false
+                }
+                is Result.Error -> {
+                    errorMsg = res.message
+                    isLoading = false
+                }
             }
         }
     }
@@ -875,8 +696,8 @@ fun LoginLogsScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Kirishlar Tarixi", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
-                        Text("login jadvali • ${logs.size} ta urinish", fontSize = 11.sp, color = Color.White.copy(0.8f))
+                        Text("Kirishlar tarixi (login)", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Jami urinishlar: ${logs.size}", fontSize = 12.sp, color = Color.White.copy(0.85f))
                     }
                 },
                 navigationIcon = {
@@ -889,93 +710,94 @@ fun LoginLogsScreen(onBack: () -> Unit) {
                         Icon(Icons.Default.Refresh, contentDescription = "Yangilash", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ShopPrimary, titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ShopPrimary,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ShopBackground)
                 .padding(padding)
         ) {
             when {
-                isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = ShopPrimary)
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = ShopPrimary
+                    )
                 }
-                errorMsg != null -> Column(
-                    Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Default.WifiOff, contentDescription = null, tint = ShopTextMuted, modifier = Modifier.size(48.dp))
-                    Spacer(Modifier.height(12.dp))
-                    Text(errorMsg ?: "Xatolik", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = { loadLogs() }, colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary)) {
-                        Text("Qayta urinish")
+                errorMsg != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = errorMsg ?: "Xatolik", color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { loadLogs() }) {
+                            Text("Qayta urinish")
+                        }
                     }
                 }
-                logs.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.History, contentDescription = null, tint = ShopTextMuted, modifier = Modifier.size(56.dp))
-                        Spacer(Modifier.height(10.dp))
-                        Text("Hech qanday kirish logi yo'q", color = ShopTextMuted)
-                    }
+                logs.isEmpty() -> {
+                    Text(
+                        text = "Kirish loglari mavjud emas",
+                        modifier = Modifier.align(Alignment.Center),
+                        color = ShopTextMuted
+                    )
                 }
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(logs) { log ->
-                        val isSuccess = log.status.equals("SUCCESS", ignoreCase = true)
-                        val statusColor = if (isSuccess) ShopSuccess else Color(0xFFD32F2F)
-                        val bgColor = if (isSuccess) ShopSuccess.copy(0.08f) else Color(0xFFD32F2F).copy(0.08f)
-
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(1.dp),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, ShopCardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(logs) { log ->
+                            val isSuccess = log.status.equals("SUCCESS", ignoreCase = true)
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                Box(
-                                    modifier = Modifier.size(44.dp).clip(CircleShape).background(bgColor),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
-                                        if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                                        imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Cancel,
                                         contentDescription = null,
-                                        tint = statusColor,
-                                        modifier = Modifier.size(26.dp)
+                                        tint = if (isSuccess) ShopSuccess else MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(28.dp)
                                     )
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text("@${log.login}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = ShopTextDark)
-                                    Surface(color = bgColor, shape = RoundedCornerShape(6.dp)) {
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = "Login: ${log.login}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         Text(
-                                            log.status, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                            color = statusColor,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            text = "Status: ${log.status}",
+                                            fontSize = 13.sp,
+                                            color = if (isSuccess) ShopSuccess else MaterialTheme.colorScheme.error
                                         )
+                                        if (log.createdAt.isNotEmpty()) {
+                                            Text(
+                                                text = log.createdAt.take(19).replace('T', ' '),
+                                                fontSize = 11.sp,
+                                                color = ShopTextMuted
+                                            )
+                                        }
                                     }
-                                    if (log.createdAt.isNotEmpty()) {
-                                        Text(
-                                            log.createdAt.take(19).replace('T', ' '),
-                                            fontSize = 11.sp, color = ShopTextMuted.copy(0.7f)
-                                        )
-                                    }
-                                }
-                                Surface(
-                                    color = ShopPrimary.copy(0.1f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("#${log.id}", fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                                        color = ShopPrimary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                    Text(
+                                        text = "#${log.id}",
+                                        fontSize = 13.sp,
+                                        color = ShopTextMuted
+                                    )
                                 }
                             }
                         }
@@ -1016,8 +838,8 @@ fun ShopHomeScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Velora Shop", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
-                        Text("@$userLogin", fontSize = 11.sp, color = Color.White.copy(0.8f))
+                        Text("Velora Shop", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(userLogin, fontSize = 12.sp, color = Color.White.copy(0.85f))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -1040,7 +862,7 @@ fun ShopHomeScreen(
                         },
                         modifier = Modifier.padding(end = 4.dp)
                     ) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Cart", tint = Color.White)
+                        Icon(Icons.Default.ShoppingCart, contentDescription = "Savatcha", tint = Color.White)
                     }
                     IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Chiqish", tint = Color.White)
@@ -1052,12 +874,10 @@ fun ShopHomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ShopBackground)
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(16.dp)
         ) {
-            Text("Featured Products", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = ShopTextDark)
-            Text("Explore our top picks for you", fontSize = 12.sp, color = ShopTextMuted)
+            Text("Mahsulotlar", fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -1066,46 +886,43 @@ fun ShopHomeScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(sampleProducts) { product ->
-                    ProductGridCard(product = product, onAdd = {
-                        onAddToCart()
-                        Toast.makeText(context, "${product.name} savatchaga qo'shildi!", Toast.LENGTH_SHORT).show()
-                    })
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProductGridCard(product: Product, onAdd: () -> Unit) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp),
-        modifier = Modifier.fillMaxWidth().border(1.dp, ShopCardBorder, RoundedCornerShape(14.dp))
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            Box(
-                modifier = Modifier.fillMaxWidth().height(90.dp).clip(RoundedCornerShape(10.dp)).background(ShopBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = product.iconEmoji, fontSize = 42.sp)
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(product.category.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ShopPrimary)
-            Text(product.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = ShopTextDark, maxLines = 1)
-            Spacer(Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("\$${product.price}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ShopTextDark)
-                IconButton(
-                    onClick = onAdd,
-                    modifier = Modifier.size(32.dp).clip(CircleShape).background(ShopPrimary)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(80.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = product.iconEmoji, fontSize = 40.sp)
+                            }
+                            Text(text = product.category.uppercase(), fontSize = 10.sp, color = ShopPrimary, fontWeight = FontWeight.Bold)
+                            Text(text = product.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                            Spacer(Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "\$${product.price}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                IconButton(
+                                    onClick = {
+                                        onAddToCart()
+                                        Toast.makeText(context, "${product.name} qo'shildi!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(ShopPrimary)
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
